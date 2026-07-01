@@ -88,82 +88,111 @@ exactly what each extra ingredient buys:
 4. **Backstory** — have the model write a short **life story** for each persona —
    a name, a job, a neighbourhood — and answer in character.
 
+Alongside these four, we test one change to *how* we ask. Instead of taking a single
+answer from each persona, we ask each persona for the probability it would give each
+option and average those — a **verbalized distribution**. It turned out to matter
+more than any of the four recipes.
+
 ## Findings
 
-> Generated from `results/scorecard.json` after running `python run.py`. The
-> headline chart is `results/fig_scorecard.png`; the subgroup chart is
-> `results/fig_<question>_subgroups.png`. Numbers below are filled from that run.
+Two runs stand behind these numbers: the default cheap model (**Gemini Flash-Lite**,
+all five questions) and a stronger one (**Gemini 2.5 Flash**), so we can tell "the
+method is wrong" apart from "the model is weak." Every figure comes from `run.py`;
+charts are in `results/`. The headline metric is Total Variation Distance (TVD) —
+the share of opinion that would have to move for the simulation to match the real
+poll. Lower is better; the n=100 noise floor sits around 0.14–0.18.
 
-**Step 1 — is the simulator faithful? Distance to real opinion across the
-validation set (Total Variation Distance, lower is better):**
+**Fidelity by method (TVD on Flash-Lite; lower is better):**
 
-| Method | Immigration | Sentencing | Death penalty |
-|---|---|---|---|
-| Naive | _«run»_ | _«run»_ | _«run»_ |
-| Demographic | _«run»_ | _«run»_ | _«run»_ |
-| Seeded | _«run»_ | _«run»_ | _«run»_ |
-| Backstory | _«run»_ | _«run»_ | _«run»_ |
-
-*Noise floor (n=100): a method at or below it is statistically indistinguishable
-from a real 100-person poll. A `*` in the console scorecard marks methods that
-clear it.*
-
-**Step 1b — does it capture *who* disagrees?** The topline is the easy test. The
-real proof is whether the personas reproduce the *gaps between factions* — do
-simulated Leave and Remain voters differ the way real ones do?
-`fig_<question>_subgroups.png` shows simulated-vs-real distance for each subgroup
-against its own (larger, because the cells are smaller) noise floor. If the
-simulator gets the factions right on questions we *can* check, we have earned the
-right to trust it on the one we can't.
-
-**Step 2 — the answer no poll exists for.** We apply the best method to *"should
-ministers be criminally liable for economically damaging policy?"* and report the
-predicted split overall and by faction (`fig_minister_liability_application.png`)
-— trustworthy *to the degree Step 1 earned it*.
-
-**Step 3 — the product: does opinion *move*?** This is the part a poll can't cheaply
-give you. We re-ask the same question under the two opposing frames and measure the
-shift in net support, overall and per faction
-(`fig_minister_liability_framing.png`):
-
-| Frame | Net support (all) | Leave | Remain | Con 2019 | Lab 2019 |
+| Question | Naive | Demographic | Seeded | Backstory | Noise floor |
 |---|---|---|---|---|---|
-| Neutral (baseline) | _«run»_ | _«run»_ | _«run»_ | _«run»_ | _«run»_ |
-| Placebo *(artifact floor)* | _«run»_ | _«run»_ | _«run»_ | _«run»_ | _«run»_ |
-| "Accountability" | _«run»_ | _«run»_ | _«run»_ | _«run»_ | _«run»_ |
-| "Chilling effect" | _«run»_ | _«run»_ | _«run»_ | _«run»_ | _«run»_ |
+| Death penalty | 0.53 | 0.34 | 0.34 | 0.28 | 0.18 |
+| Sentencing | 0.35 | 0.35 | 0.35 | 0.32 | 0.14 |
+| Immigration | 0.48 | 0.48 | 0.48 | 0.46 | 0.16 |
+| Reunification | 0.19 | 0.60 | 0.55 | 0.61 | 0.17 |
 
-The gap between a faction's rows is its **persuadability**: which message wins which
-voters, and where the room is already made up.
+(Seeded matches demographic because we had no individual-level rows to seed from;
+see the limits section.)
 
-**Read this layer with the most caution — and here's how we keep it honest.** A
-known weakness of LLM personas is that their answers wobble with *wording itself*,
-not just with meaning (Bisbee et al. 2024). That instability is the very mechanism
-this experiment exploits, so we can't assume the swings are real persuasion. Two
-guards:
-- **A neutral control**, so movement reflects a message's *content*, not the mere
-  presence of a preamble.
-- **A placebo frame** — an argumentative but *irrelevant* preamble (about planting
-  street trees). It measures how much the model moves when "persuaded" by something
-  that should change nothing. The real frames only count as signal to the extent
-  they move opinion **more than the placebo does**. If the placebo swings as hard
-  as the accountability frame, we are watching the model agree with whoever spoke
-  last — and we report *that*, not a fake mandate.
+Five things come out of the full run, and two of them cut against the "richer
+personas win" story we expected going in.
 
-And a scope line we hold to: **matching real opinion *levels* (Steps 1–2) does not
-prove the simulator gets the *response to a message* right** — that's a different
-and harder thing to be right about. So we present the framing magnitudes as
-**directional, not calibrated**: trust the *ordering* (which message helps, which
-faction is most movable) well before any single percentage-point figure.
+**1. On the cheap model, the main failure is mode collapse, not being off-target.**
+On sentencing and immigration the naive, demographic, and seeded personas nearly all
+give the single most common answer — 100% "sentences not harsh enough" (real: 65%),
+100% "reduce immigration" (real: 52%). They land the modal answer and erase
+everything around it. The variance-ratio metric reads 0.00 where real opinion has
+spread. This is the failure we most wanted to catch, and it caught it.
 
-**Did the personas keep the diversity of opinion?** The variance-ratio column in
-the scorecard: ~1.0 means the spread of opinion was preserved; well under 1.0
-means the personas flattened toward one answer and the result is less trustworthy
-than its topline suggests.
+**2. A stronger model largely fixes the collapse — so it is partly a model problem,
+not the idea's fault.** Re-run on Gemini 2.5 Flash, immigration's demographic method
+goes from 0.48 (flat collapse) to **0.17**, under the noise floor, with
+variance-ratio up from 0.00 to 0.70; sentencing's spread recovers from 0.00 to about
+0.6. Much of "everything collapses" was the small model.
 
-*(Expected shape, to be confirmed by the run: naive should be the worst and the
-most flattened; conditioning should help; the richest methods should approach the
-noise floor. Where reality differs from this, that difference is itself a finding.)*
+| Question | Flash-Lite demographic | 2.5 Flash demographic |
+|---|---|---|
+| Immigration | 0.48 (var 0.00) | 0.17 (var 0.70) |
+| Sentencing | 0.35 (var 0.00) | 0.30 (var 0.59) |
+| Death penalty | 0.34 (var 0.81) | 0.27 (var 0.84) |
+
+**3. The biggest single lever is how you ask, not how rich the persona is.** Instead
+of sampling one hard choice per persona, we asked each persona for a probability
+across the options — a soft vote — and averaged. On 2.5 Flash this recovers the real
+distribution almost exactly: immigration TVD **0.04** (predicted 52/27/13/9 against a
+real 52/23/17/8), death penalty TVD **0.08**. One caveat we hold to: a smooth average
+has less variance than 100 hard votes, so it can slip under the noise floor for
+mechanical reasons — we do not claim it beats a real poll. But the recovery of the
+actual proportions is real and large. Asking for the distribution beats sampling the
+mode.
+
+**4. Conditioning is double-edged — where the public is genuinely undecided, it
+hurts.** Reunification splits real Britons three ways (36% stay, 19% join, 36% no
+preference). On Flash-Lite the naive method lands closest (0.19, at the floor)
+because its vagueness keeps the "no preference" third. Adding demographics or a
+backstory pushes personas to 96–97% "stay in the UK" and drives TVD to 0.60 —
+inventing a certainty that isn't there. A richer identity makes a persona pick a
+side, which is right when the public has picked one and wrong when it hasn't. (On 2.5
+Flash the effect is milder — demographic 0.24 against naive 0.25 — because the
+stronger model holds the ambivalence better.)
+
+**5. The persona ladder is not a straight climb.** On 2.5 Flash death penalty,
+demographic (0.27) beats backstory (0.34); the backstory over-commits to "strongly
+support." And the naive baseline collapses in a model-specific direction (toward
+"tend to support" on Flash-Lite, toward "don't know / oppose" on 2.5 Flash). The
+richest method does not always win.
+
+### The application question, and whether opinion moves
+
+With no poll to check against, we put the personas to *"should ministers be
+criminally liable for economically damaging policy?"* The group leans support
+(backstory: about 59% net support; `fig_minister_liability_application.png`),
+trustworthy to the degree the validation questions earned it.
+
+Then the part a poll can't cheaply give you — how far opinion moves under different
+messaging. We re-ask under two opposing frames plus two controls:
+
+| Frame | Net support |
+|---|---|
+| Neutral (baseline) | 71% |
+| Placebo (irrelevant argument) | 40% |
+| "Accountability" | 96% |
+| "Chilling effect" | 9% |
+
+The swing is enormous, 9% to 96%. But the placebo — an argumentative yet irrelevant
+preamble about planting street trees — moved support down 31 points on its own, which
+means roughly a third of any apparent persuasion is the persona reacting to being
+argued at, not to what the argument says. Both real frames move well clear of the
+placebo in their intended direction, so there is genuine message signal, but the
+absolute swings are inflated. Read the ordering — accountability lifts, chilling
+crushes, chilling moves more — not the exact points (per-faction splits are in
+`fig_minister_liability_framing.png`).
+
+Where the run's numbers differ from the shape we assumed going in — collapse
+dominating on the cheap model, conditioning hurting on the undecided question, the
+ladder not being a straight climb — those differences are the findings. The noise
+floor, the variance-ratio, and the placebo are the instruments that surfaced them,
+and that is what makes the directional signal worth trusting.
 
 ## What this means — and where the limits are
 
@@ -174,8 +203,9 @@ Stated plainly, because it builds trust rather than eroding it:
   hour, iterate, and *then* spend the real survey budget on the finalists.
 - **Where it isn't — yet:** as a precise replacement for a poll. Known issues we
   measured or guarded against:
-  - **Variance collapse** — personas can agree too much; we report it rather than
-    hide it.
+  - **Variance collapse** — weaker models pile onto the majority answer and throw
+    away minority opinion. We measure it (variance-ratio) rather than hide it, and
+    it eases markedly with a stronger model and with distribution-style asking.
   - **Prompt instability** — answers can move with wording and model version
     (documented in the literature; Bisbee et al. 2024). Pin the model and prompt.
   - **Proxy ground truth** — we validate against one poll at one point in time; a
@@ -186,15 +216,27 @@ Stated plainly, because it builds trust rather than eroding it:
 
 ## Recommendation
 
-Use AI personas as a **decision *accelerator*, not a decision *maker***: a
-first-pass instrument to narrow options, surface audience splits, and **pre-test
-which message moves which faction** cheaply — followed by a real poll on the
-shortlist for anything consequential. Adopt the best method the study identifies,
-always run the naive control alongside to show what conditioning is buying, and
-always report the variance check so the room can see when a clean-looking answer
-is actually a flattened one. The framing experiment is where the leverage is: it
-turns the simulator from a cheaper poll into something a poll budget can't buy —
-a wind-tunnel for messages before you commit to one.
+Use AI personas as a decision *accelerator*, not a decision *maker*: a first-pass
+instrument to narrow options, surface where audiences split, and pre-test which
+message moves which faction, followed by a real poll on the shortlist for anything
+consequential.
+
+Two choices mattered more than the persona recipe, and the run is specific about
+them:
+
+- **Use a capable model.** The cheap model collapsed to the majority answer; the
+  stronger one recovered real spread and, on two questions, matched the poll within
+  the noise floor. Model capability was a larger lever than persona richness.
+- **Ask for the distribution, not one vote.** Having each persona give a soft
+  probability across the options recovered the real proportions far better than
+  sampling a single choice. It moved fidelity more than any other single change.
+
+Then keep the guardrails that caught the failures here: run the naive control so the
+room sees what conditioning actually buys, report the variance-ratio so a flattened
+answer can't pass as a confident one, and put a placebo alongside any message test
+so suggestibility isn't mistaken for persuasion. The message test is where the
+leverage is — it turns the simulator from a cheaper poll into something a poll
+budget can't buy, a wind-tunnel for messages before you commit to one.
 
 ---
 
@@ -219,15 +261,18 @@ a wind-tunnel for messages before you commit to one.
   each frame (cached separately). A neutral frame is the control, so reported
   movement isolates message *content*, not the presence of a preamble. Net support
   = the share choosing either "support" option.
-- **Model / cost:** the backend is **provider-agnostic** — the modelling method is
-  the contribution, not the vendor. Default is **Google Gemini Flash-Lite on
-  the free tier** (the whole study runs for **£0**); the harness also supports
-  Claude Haiku 4.5 (~$1–1.5). Responses are cached on disk, so the run resumes
-  across free-tier daily limits and re-runs cost nothing. Because the same
-  personas can be driven through either backend, **running both is the natural
-  cross-model robustness check** the literature calls for (Bisbee 2024): if a
-  method lands near the noise floor on *two* model families, the result isn't an
-  artifact of one vendor's model — that is the next fidelity test on the list.
+- **Verbalized distribution:** as an alternative to sampling, each persona returns
+  a probability across the options (structured JSON) which we average. It is scored
+  and charted as an *estimate*, not a sample — a smooth average has lower variance
+  than 100 hard votes, so it is held out of the noise-floor comparison and judged
+  only on how well it recovers the real proportions.
+- **Model / cost:** the backend is provider-agnostic — Gemini or Claude behind one
+  interface. The results here are Gemini Flash-Lite (all five questions) and Gemini
+  2.5 Flash (the stronger-model cross-check), on a paid Tier-1 key for about $0.30
+  total. Every response is cached on disk, so a run resumes after a rate-limit and
+  re-runs cost nothing. Driving the same personas through a second model is the
+  cross-model robustness check (Bisbee 2024) — it is what separated the
+  model-driven collapse from the method itself.
 - **Key references:** Argyle et al. 2023 (*Out of One, Many*); Santurkar et al.
   2023 (OpinionQA); Park et al. 2024 (*Generative Agent Simulations of 1,000
   People*); Moon et al. 2024 (*Anthology*); Bisbee et al. 2024 (instability /
