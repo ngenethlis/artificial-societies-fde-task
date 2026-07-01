@@ -88,7 +88,7 @@ class Surveyor:
         self.cache_path.write_text(json.dumps(self._cache, indent=0))
 
     # -- provider plumbing -------------------------------------------------
-    def _gemini_generate(self, contents: str, config, max_retries: int = 6):
+    def _gemini_generate(self, contents: str, config, max_retries: int = 9):
         """Call Gemini, retrying transient failures with backoff:
           * 429 / RESOURCE_EXHAUSTED  -> rate or daily quota
           * 5xx (e.g. 503 UNAVAILABLE) -> model temporarily overloaded
