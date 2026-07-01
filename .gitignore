@@ -1,1 +1,11 @@
+# Secrets
 .env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Generated outputs (response cache, backstories, scorecards, figures).
+# Reproducible from run.py; not source.
+results/
