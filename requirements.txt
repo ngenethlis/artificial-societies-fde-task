@@ -1,0 +1,12 @@
+# Core dependencies for the LLM-personas pipeline.
+#   pip install -r requirements.txt
+numpy
+matplotlib
+
+# Default model backend: Google Gemini (free tier, no credit card).
+# Set GEMINI_API_KEY before running anything that hits the API.
+google-genai
+
+# Optional alternate backend: Claude Haiku 4.5.
+# Uncomment + set PERSONA_PROVIDER=anthropic and ANTHROPIC_API_KEY to use it.
+# anthropic
