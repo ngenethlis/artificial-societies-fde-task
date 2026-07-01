@@ -7,6 +7,12 @@ is faithful — against published polls, at topline *and* across factions — th
 spend that earned trust on an un-pollable decision and a message-framing
 experiment. Full reasoning and the stakeholder narrative are in **`REPORT.md`**.
 
+## TL;DR
+
+- This builds 100 GB-adult personas and runs them as a survey panel.
+- It validates against real published polls first, with a noise-floor check.
+- Then it answers one un-pollable question and tests which framing moves which groups.
+
 ## What's here
 
 | File | Role |
@@ -55,8 +61,8 @@ real finding. **Plan B if it collapses:** drop enum mode for the naive method an
 parse a plain "respond with exactly one of these options" reply, which preserves
 natural sampling.
 
-**Free-tier daily limits.** The full run is ~2,500 calls (2,000 survey + 100
-backstories + ~400 framing). Free-tier *daily* request caps (RPD) may not clear
+**Free-tier daily limits.** The full run is ~3,000 calls (2,000 survey + 100
+backstories + ~500 verbalized + ~400 framing). Free-tier *daily* request caps (RPD) may not clear
 that in one day, so the deliverable can take **multiple days** to generate. This
 is fine: every answer is cached after each call, a per-minute (RPM) 429 is
 retried with short backoff, and a persistent (daily) 429 exits cleanly — just
@@ -102,8 +108,10 @@ subgroup too, since subgroup cells are small (London ≈ n=9–13) and noisy.
 - **Immigration** (reduced/same/increased) — Ipsos / British Future tracker
   Wave 16, GB adults, n=3000, Feb 2024; topline 52/23/17/8 + crosstabs by EU-ref
   and party.
+
+**Extra topline check** (kept out of the headline):
 - **Irish reunification** — Ipsos MORI / King's College London, GB adults, 2019;
-  topline 36/19/36/9 (no published subgroup crosstabs, so topline-only).
+  topline 36/19/36/9 (no published subgroup crosstabs).
 
 The three validation questions share one latent axis — *"the system's too soft;
 get tough; hold elites accountable"* — so they're coherent evidence for, not a
@@ -119,8 +127,9 @@ skipped.
 
 **Framing experiment** (the product demo): the application question is re-asked
 under two opposing, balanced messages — an *accountability* frame and a
-*chilling-effect* counter-frame — plus a neutral control. We measure how far net
-support moves overall and **per faction** (`fig_minister_liability_framing.png`).
+*chilling-effect* counter-frame — plus two controls (neutral + placebo). We
+measure how far net support moves overall and **per faction**
+(`fig_minister_liability_framing.png`).
 A static poll gives one number; this shows which message wins which voters — the
 thing the simulator exists to deliver. Defined as `Question.frames`; threaded
 through `survey()` with a frame-tagged cache key so passes never collide.

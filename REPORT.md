@@ -14,11 +14,11 @@ it once. So the questions that matter most, the new ones and the sensitive ones 
 the "what if we framed it this way instead" ones, mostly never get asked at all.
 
 This study builds a simulator of a real population that answers those questions in
-an hour for a couple of dollars, and then tries hard to break it. The goal isn't to
-replay polls we already have. It's to do the two things a one-shot poll can't:
-answer questions no poll exists for, and test how opinion moves under different
-messaging before you spend the real budget. Everything below is about earning the
-right to trust those two outputs.
+an hour for a couple of pounds, and then tries hard to break it. The goal isn't to replay existing polls.
+It's to do the two things a one-shot poll can't:
+- answer questions no poll exists for, 
+- test how opinion moves under different messaging before you spend the real budget.
+Everything below is about earning the right to trust those two outputs.
 
 ## What we built, and why these questions
 
@@ -269,7 +269,7 @@ a poll budget can't buy: a wind-tunnel for messages before you commit to one.
   how well it recovers the real proportions.
 - Model and cost: the backend is provider-agnostic, Gemini or Claude behind one
   interface. The results here are Gemini Flash-Lite (all five questions) and Gemini
-  2.5 Flash (the stronger-model cross-check), on a paid Tier-1 key, about $0.30 in
+  2.5 Flash (the stronger-model cross-check), on a paid Tier-1 key, about €3 in
   total. Every response is cached on disk, so a run resumes after a rate-limit and
   re-runs cost nothing. Running the same personas through a second model is the
   cross-model robustness check (Bisbee 2024), and it's what separated the

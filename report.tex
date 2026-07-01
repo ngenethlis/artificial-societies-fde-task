@@ -113,7 +113,8 @@ to matter more than any of the four recipes.
 
 Two runs sit behind these numbers: the default cheap model (Gemini Flash-Lite, all
 five questions) and a stronger one (Gemini 2.5 Flash), which lets us separate ``the
-method is wrong'' from ``the model is weak''. The headline metric is Total Variation
+method is wrong'' from ``the model is weak''. Every figure comes from \texttt{run.py}
+and the charts are in \texttt{results/}. The headline metric is Total Variation
 Distance (TVD), the share of opinion that would have to move for the simulation to
 match the real poll. Lower is better, and the 100-person noise floor sits around
 0.14 to 0.18.
@@ -138,7 +139,8 @@ demographic because we had no individual-level rows to seed from; see the limits
 \centering
 \includegraphics[width=\textwidth]{fig_scorecard.png}
 \caption{Distance to real opinion by method, each question against its own noise
-floor (dashed). Green bars clear the floor; red bars miss it.}
+floor (dashed). Green bars clear the floor; red bars miss it; blue bars are
+verbalized estimates (not pass/fail against the floor).}
 \label{fig:scorecard}
 \end{figure}
 
@@ -260,6 +262,7 @@ argued at, not to what the argument actually says. Both real frames move well cl
 of the placebo in their intended direction, so there's genuine signal in the message
 content, but the absolute swings are inflated. Trust the ordering (accountability
 lifts, chilling crushes, chilling moves more) rather than the exact points.
+Per-faction splits are in \texttt{fig\_minister\_liability\_framing.png}.
 
 Where the run's numbers differ from the shape we assumed going in (collapse
 dominating on the cheap model, conditioning hurting on the undecided question, the
@@ -308,9 +311,10 @@ a poll budget can't buy: a wind-tunnel for messages before you commit to one.
 \begin{itemize}
   \item \textbf{Metric.} Total Variation Distance (the share of probability mass that would have to move), plus Jensen--Shannon, Wasserstein (for ordinal questions), modal-answer match, and entropy ratio. The framing follows Argyle et al.\ 2023 on algorithmic fidelity.
   \item \textbf{Noise floor.} A bootstrap. Repeatedly draw two n-sized samples from the real distribution and measure their TVD; report the mean and 95th percentile, per subgroup at that subgroup's realised n.
-  \item \textbf{Single-select.} Forced through the model's structured-output / enum mode, with option order shuffled per call to cancel position bias. We sample one answer per persona at temperature above zero, one person and one answer, rather than reading an option-probability distribution off the model.
-  \item \textbf{Verbalized distribution.} Instead of sampling, each persona returns a probability across the options as structured JSON, which we average. It's scored as an estimate rather than a sample, and judged only on how well it recovers the real proportions.
-  \item \textbf{Model and cost.} Provider-agnostic (Gemini or Claude behind one interface). Results here are Gemini Flash-Lite (all five questions) and Gemini 2.5 Flash (the stronger-model cross-check), about \$0.30 in total. Responses are cached on disk, so a run resumes after a rate-limit and re-runs cost nothing.
+  \item \textbf{Single-select.} Forced through the model's structured-output / enum mode, with option order shuffled per call to cancel position bias. We sample one answer per persona at temperature above zero, one person and one answer, rather than reading an option-probability distribution off the model. Sampling is what gives the naive baseline a real spread to measure. (\texttt{--smoke} checks that sampling actually varies under the chosen backend before the full run, since constrained decoding can otherwise collapse to a single answer.)
+  \item \textbf{Framing experiment.} The frame is prepended to the question as a message the respondent just encountered, and the same personas re-answer under each frame, cached separately. A neutral frame is the control, so the reported movement isolates message content rather than the mere presence of a preamble. Net support is the share choosing either ``support'' option.
+  \item \textbf{Verbalized distribution.} Instead of sampling, each persona returns a probability across the options as structured JSON, which we average. It's scored and charted as an estimate rather than a sample, because a smooth average has lower variance than 100 hard votes, so it's held out of the noise-floor comparison and judged only on how well it recovers the real proportions.
+  \item \textbf{Model and cost.} Provider-agnostic (Gemini or Claude behind one interface). Results here are Gemini Flash-Lite (all five questions) and Gemini 2.5 Flash (the stronger-model cross-check), on a paid Tier-1 key, about €3 in total. Responses are cached on disk, so a run resumes after a rate-limit and re-runs cost nothing. Running the same personas through a second model is the cross-model robustness check (Bisbee 2024), and it's what separated the model-driven collapse from the method itself.
   \item \textbf{Key references.} Argyle et al.\ 2023 (Out of One, Many); Santurkar et al.\ 2023 (OpinionQA); Park et al.\ 2024 (Generative Agent Simulations of 1,000 People); Moon et al.\ 2024 (Anthology); Bisbee et al.\ 2024 (the instability / flattening critique).
 \end{itemize}
 
