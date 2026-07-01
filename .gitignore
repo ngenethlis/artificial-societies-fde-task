@@ -9,3 +9,11 @@ __pycache__/
 # Generated outputs (response cache, backstories, scorecards, figures).
 # Reproducible from run.py; not source.
 results/
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
